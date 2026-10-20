@@ -157,3 +157,114 @@ export const toggleJoinGroup = async (req: Request, res: Response) => {
     return res.status(500).json({ error: error.message });
   }
 };
+
+export const getGroupByInviteCode = async (req: Request, res: Response) => {
+  try {
+    const { code } = req.params;
+    const currentUserId = req.headers['x-user-id'] ? parseInt(req.headers['x-user-id'] as string, 10) : 1;
+
+    const groupRes = await query(
+      `SELECT 
+        rg.group_id, rg.name, rg.topic, rg.description, rg.avatar_url, rg.created_at, rg.invite_code,
+        u.name AS owner_name, u.institution AS owner_institution,
+        (SELECT COUNT(*) FROM group_members WHERE group_id = rg.group_id) AS members_count,
+        EXISTS(SELECT 1 FROM group_members WHERE group_id = rg.group_id AND user_id = $2) AS is_member
+       FROM research_groups rg
+       LEFT JOIN users u ON u.user_id = rg.owner_id
+       WHERE rg.invite_code = $1`,
+      [code, currentUserId]
+    );
+
+    if (groupRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Mã liên kết phòng Lab không hợp lệ hoặc đã hết hạn.' });
+    }
+
+    return res.json({ group: groupRes.rows[0] });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+export const joinGroupByLink = async (req: Request, res: Response) => {
+  try {
+    const currentUserId = req.headers['x-user-id'] ? parseInt(req.headers['x-user-id'] as string, 10) : 1;
+    const { invite_code } = req.body;
+
+    if (!invite_code) {
+      return res.status(400).json({ error: 'Mã mời tham gia là bắt buộc.' });
+    }
+
+    const groupRes = await query(`SELECT group_id, name FROM research_groups WHERE invite_code = $1`, [invite_code]);
+    if (groupRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Mã liên kết phòng Lab không tồn tại.' });
+    }
+
+    const group = groupRes.rows[0];
+
+    // Check membership
+    const memberCheck = await query(
+      `SELECT role FROM group_members WHERE group_id = $1 AND user_id = $2`,
+      [group.group_id, currentUserId]
+    );
+
+    if (memberCheck.rows.length > 0) {
+      return res.json({ 
+        message: 'Bạn đã là thành viên của phòng nghiên cứu này rồi.', 
+        group_id: group.group_id,
+        already_member: true 
+      });
+    }
+
+    // Join
+    await query(
+      `INSERT INTO group_members (group_id, user_id, role) VALUES ($1, $2, 'member')`,
+      [group.group_id, currentUserId]
+    );
+
+    return res.json({ 
+      message: `Chào mừng bạn đã gia nhập phòng nghiên cứu "${group.name}"!`, 
+      group_id: group.group_id,
+      already_member: false 
+    });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+export const inviteUserToGroup = async (req: Request, res: Response) => {
+  try {
+    const currentUserId = req.headers['x-user-id'] ? parseInt(req.headers['x-user-id'] as string, 10) : 1;
+    const { id } = req.params;
+    const groupId = parseInt(id as string, 10);
+    const { target_user_id } = req.body;
+
+    if (!target_user_id) {
+      return res.status(400).json({ error: 'Target user ID is required.' });
+    }
+
+    const groupRes = await query(`SELECT name FROM research_groups WHERE group_id = $1`, [groupId]);
+    if (groupRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy phòng Lab.' });
+    }
+    const groupName = groupRes.rows[0].name;
+
+    const senderRes = await query(`SELECT name FROM users WHERE user_id = $1`, [currentUserId]);
+    const senderName = senderRes.rows[0]?.name || 'Một nhà nghiên cứu';
+
+    // Check if already member
+    const memberCheck = await query(`SELECT 1 FROM group_members WHERE group_id = $1 AND user_id = $2`, [groupId, target_user_id]);
+    if (memberCheck.rows.length > 0) {
+      return res.status(400).json({ error: 'Nhà nghiên cứu này đã là thành viên phòng Lab rồi.' });
+    }
+
+    // Send notification
+    await query(`
+      INSERT INTO notifications (user_id, sender_id, type, title, message, link)
+      VALUES ($1, $2, 'lab_invite', 'Lời mời tham gia phòng Lab', $3, $4)
+    `, [target_user_id, currentUserId, `${senderName} đã gửi lời mời bạn tham gia phòng nghiên cứu "${groupName}".`, `/groups/${groupId}`]);
+
+    return res.json({ message: 'Đã gửi lời mời tham gia phòng Lab thành công.' });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+};

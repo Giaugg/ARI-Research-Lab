@@ -8,6 +8,7 @@ export async function seedDatabase(scale: 'default' | 'large' = 'default') {
     // Clean tables in reverse dependency order
     await client.query(`
       TRUNCATE TABLE 
+        notifications,
         publication_authors, publications, 
         comments, post_likes, post_tags, tags, posts, 
         group_members, research_groups, 
@@ -31,6 +32,7 @@ export async function seedDatabase(scale: 'default' | 'large' = 'default') {
       {
         name: 'Prof. Michael Stonebraker',
         email: 'stonebraker@mit.edu',
+        role: 'pi',
         institution: 'MIT CSAIL',
         bio: 'Pioneer in database systems, Turing Award Laureate. Researching modern HTAP, column-stores, and PostgreSQL foundations.',
         research_fields: ['PostgreSQL', 'Database Optimization', 'Distributed Systems'],
@@ -39,6 +41,7 @@ export async function seedDatabase(scale: 'default' | 'large' = 'default') {
       {
         name: 'Dr. Jennifer Widom',
         email: 'widom@stanford.edu',
+        role: 'admin',
         institution: 'Stanford University',
         bio: 'Dean of Stanford Engineering. Specializing in query languages, graph databases, and recursive relational algebra.',
         research_fields: ['Database Optimization', 'Graph Theory', 'Recursive CTE'],
@@ -47,6 +50,7 @@ export async function seedDatabase(scale: 'default' | 'large' = 'default') {
       {
         name: 'Dr. Yann LeCun',
         email: 'lecun@nyu.edu',
+        role: 'pi',
         institution: 'NYU & Meta AI',
         bio: 'Chief AI Scientist, Turing Award Laureate. Focusing on self-supervised learning, deep representation, and energy-based models.',
         research_fields: ['Artificial Intelligence', 'Machine Learning'],
@@ -55,6 +59,7 @@ export async function seedDatabase(scale: 'default' | 'large' = 'default') {
       {
         name: 'Dr. Jeffrey Ullman',
         email: 'ullman@stanford.edu',
+        role: 'researcher',
         institution: 'Stanford University',
         bio: 'Turing Award Laureate. Co-author of Database System Concepts, database theory, Datalog, and graph analytics.',
         research_fields: ['Database Optimization', 'Graph Theory', 'Big Data'],
@@ -63,6 +68,7 @@ export async function seedDatabase(scale: 'default' | 'large' = 'default') {
       {
         name: 'Dr. Christopher Manning',
         email: 'manning@stanford.edu',
+        role: 'researcher',
         institution: 'Stanford NLP Lab',
         bio: 'Director of Stanford Artificial Intelligence Laboratory. Deep learning for natural language processing.',
         research_fields: ['Artificial Intelligence', 'Machine Learning'],
@@ -71,6 +77,7 @@ export async function seedDatabase(scale: 'default' | 'large' = 'default') {
       {
         name: 'Dr. Dawn Song',
         email: 'dawnsong@berkeley.edu',
+        role: 'researcher',
         institution: 'UC Berkeley',
         bio: 'Professor in EECS. Researching AI security, privacy-preserving machine learning, and blockchain architectures.',
         research_fields: ['Cybersecurity', 'Artificial Intelligence', 'Distributed Systems'],
@@ -79,6 +86,7 @@ export async function seedDatabase(scale: 'default' | 'large' = 'default') {
       {
         name: 'Dr. Andy Pavlo',
         email: 'pavlo@cs.cmu.edu',
+        role: 'researcher',
         institution: 'Carnegie Mellon University',
         bio: 'Associate Professor of Database Systems. Autonomous databases, query performance, and indexing internals.',
         research_fields: ['PostgreSQL', 'Database Optimization', 'Distributed Systems'],
@@ -87,6 +95,7 @@ export async function seedDatabase(scale: 'default' | 'large' = 'default') {
       {
         name: 'Nguyen Van An (PhD Candidate)',
         email: 'an.nguyen@vnu.edu.vn',
+        role: 'student',
         institution: 'VNU University of Engineering and Technology',
         bio: 'PhD candidate in Computer Science. Researching recursive graph traversal optimizations and indexing in PostgreSQL.',
         research_fields: ['PostgreSQL', 'Recursive CTE', 'Graph Theory'],
@@ -95,6 +104,7 @@ export async function seedDatabase(scale: 'default' | 'large' = 'default') {
       {
         name: 'Le Thi Mai (Research Fellow)',
         email: 'mai.le@hust.edu.vn',
+        role: 'researcher',
         institution: 'Hanoi University of Science and Technology',
         bio: 'Lecturer & Researcher in Data Engineering. Large-scale academic knowledge graphs and relational indexing.',
         research_fields: ['Database Optimization', 'Big Data', 'PostgreSQL'],
@@ -103,6 +113,7 @@ export async function seedDatabase(scale: 'default' | 'large' = 'default') {
       {
         name: 'Tran Hoang Nam (Grad Student)',
         email: 'nam.tran@uit.edu.vn',
+        role: 'student',
         institution: 'VNU University of Information Technology',
         bio: 'Master student exploring Full Text Search, GIN indices, and collaborative recommendation algorithms.',
         research_fields: ['Database Optimization', 'Artificial Intelligence'],
@@ -112,9 +123,9 @@ export async function seedDatabase(scale: 'default' | 'large' = 'default') {
 
     for (const u of coreUsers) {
       await client.query(`
-        INSERT INTO users (name, email, institution, bio, research_fields, avatar_url)
-        VALUES ($1, $2, $3, $4, $5, $6)
-      `, [u.name, u.email, u.institution, u.bio, u.research_fields, u.avatar_url]);
+        INSERT INTO users (name, email, role, institution, bio, research_fields, avatar_url)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `, [u.name, u.email, u.role, u.institution, u.bio, u.research_fields, u.avatar_url]);
     }
     console.log(`✓ Seeded ${coreUsers.length} core researchers.`);
 
@@ -270,11 +281,12 @@ export async function seedDatabase(scale: 'default' | 'large' = 'default') {
     }
     console.log('✓ Seeded scientific publications and co-authorships.');
 
-    // 6. Posts
+    // 6. Posts (3 scopes: 'community', 'personal', 'lab')
     const posts = [
       {
         author_id: 8,
         group_id: 1,
+        scope: 'lab',
         post_type: 'question',
         title: 'Tối ưu hóa truy vấn WITH RECURSIVE khi duyệt đồ thị theo dõi sâu hơn 4 bậc?',
         content: `Trong nghiên cứu về mạng xã hội học thuật, khi mình thực thi CTE đệ quy để tìm tất cả các nhà nghiên cứu trong phạm vi 4 bước:
@@ -289,7 +301,8 @@ Khi số lượng follows tăng lên, WorkTable memory tràn ra đĩa (disk spil
       },
       {
         author_id: 7,
-        group_id: 1,
+        group_id: null,
+        scope: 'community',
         post_type: 'research',
         title: 'So sánh Keyset Pagination và OFFSET/LIMIT trên tập dữ liệu hàng triệu bản ghi',
         content: `Một trong những sai lầm phổ biến nhất trong các hệ thống mạng xã hội học thuật là sử dụng OFFSET LIMIT cho việc tải trang bài viết và hoạt động dòng thời gian.
@@ -300,6 +313,7 @@ Thay vào đó, Keyset Pagination (Seek Method) sử dụng (created_at, post_id
       {
         author_id: 2,
         group_id: 2,
+        scope: 'lab',
         post_type: 'discussion',
         title: 'Mô hình hóa chuỗi bình luận nhiều cấp: Adjacency List vs Nested Sets vs Path Enumeration',
         content: `Chúng ta có nhiều cách để lưu trữ cây thảo luận phân cấp trong cơ sở dữ liệu quan hệ:
@@ -311,20 +325,30 @@ Trong dự án này, chúng ta nghiên cứu kỹ Adjacency List với WITH RECU
       },
       {
         author_id: 3,
-        group_id: 3,
+        group_id: null,
+        scope: 'personal',
         post_type: 'paper_share',
-        title: 'Khảo sát các phương pháp Graph Neural Networks cho gợi ý cộng tác viên khoa học',
-        content: `Chúng tôi vừa xuất bản bài báo mới về việc kết hợp cấu trúc liên kết mạng theo dõi và nội dung tóm tắt bài báo khoa học. Mô hình kết hợp truy vấn 2-hop neighbor trên SQL với vector embedding mang lại độ chính xác cao hơn 34% so với mô hình thuần heuristic.`,
-        tags: ['Artificial Intelligence', 'Machine Learning', 'Graph Theory']
+        title: 'Ghi chú nghiên cứu cá nhân: Các hướng đi mới cho self-supervised learning',
+        content: `Tổng kết ngắn về phương pháp năng lượng (Energy-Based Models) và cơ chế biểu diễn không gian latent trong các hệ thống suy luận tự động. Chúng tôi đang kiểm nghiệm các giả thuyết trên dữ liệu chuỗi thời gian lớn.`,
+        tags: ['Artificial Intelligence', 'Machine Learning']
+      },
+      {
+        author_id: 1,
+        group_id: null,
+        scope: 'community',
+        post_type: 'discussion',
+        title: 'Tương lai của Kiến trúc Cơ sở Dữ liệu Quan hệ: HTAP và Vector Embeddings',
+        content: `Sau nhiều thập kỷ phát triển từ Ingres, Postgres đến Vertica, câu hỏi lớn hiện nay là làm thế nào tích hợp vector search (HNSW/IVFFlat) ngay trong engine quan hệ mà không phải đánh đổi tính nhất quán ACID của PostgreSQL.`,
+        tags: ['PostgreSQL', 'Database Optimization', 'Big Data']
       }
     ];
 
     for (const p of posts) {
       const res = await client.query(`
-        INSERT INTO posts (author_id, group_id, post_type, title, content)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO posts (author_id, group_id, scope, post_type, title, content)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING post_id
-      `, [p.author_id, p.group_id, p.post_type, p.title, p.content]);
+      `, [p.author_id, p.group_id, p.scope, p.post_type, p.title, p.content]);
       const postId = res.rows[0].post_id;
 
       // Link tags
@@ -409,6 +433,50 @@ Trong dự án này, chúng ta nghiên cứu kỹ Adjacency List với WITH RECU
     `, [c7Id]);
 
     console.log('✓ Seeded multi-level hierarchical threaded comments (4 levels deep).');
+
+    // 8. Sample Notifications
+    const sampleNotifications = [
+      {
+        user_id: 1, // Stonebraker
+        sender_id: 2, // Widom
+        type: 'lab_invite',
+        title: 'Lời mời tham gia phòng Lab',
+        message: 'Dr. Jennifer Widom đã mời bạn tham gia phòng nghiên cứu Relational Algebra & Query Languages Lab.',
+        link: '/groups/2'
+      },
+      {
+        user_id: 1,
+        sender_id: 8,
+        type: 'comment',
+        title: 'Bình luận mới về bài viết',
+        message: 'Nguyen Van An đã trả lời bình luận của bạn trong thảo luận tối ưu CTE.',
+        link: '/posts/1'
+      },
+      {
+        user_id: 1,
+        sender_id: 7,
+        type: 'post_like',
+        title: 'Lượt thích bài nghiên cứu',
+        message: 'Dr. Andy Pavlo đã thích bài viết của bạn về Kiến trúc Cơ sở Dữ liệu Quan hệ.',
+        link: '/posts/5'
+      },
+      {
+        user_id: 2,
+        sender_id: 1,
+        type: 'follow',
+        title: 'Người theo dõi mới',
+        message: 'Prof. Michael Stonebraker đã bắt đầu theo dõi hồ sơ học thuật của bạn.',
+        link: '/profile/1'
+      }
+    ];
+
+    for (const notif of sampleNotifications) {
+      await client.query(`
+        INSERT INTO notifications (user_id, sender_id, type, title, message, link)
+        VALUES ($1, $2, $3, $4, $5, $6)
+      `, [notif.user_id, notif.sender_id, notif.type, notif.title, notif.message, notif.link]);
+    }
+    console.log('✓ Seeded initial notification alerts.');
 
     // 8. If scale == 'large', generate 100 extra synthetic users and hundreds of follows for benchmark experiments
     if (scale === 'large') {

@@ -9,6 +9,7 @@ import commentsRoutes from './routes/comments.routes';
 import groupsRoutes from './routes/groups.routes';
 import publicationsRoutes from './routes/publications.routes';
 import labRoutes from './routes/lab.routes';
+import notificationsRoutes from './routes/notifications.routes';
 
 dotenv.config();
 
@@ -32,6 +33,7 @@ app.use('/api/comments', commentsRoutes);
 app.use('/api/groups', groupsRoutes);
 app.use('/api/publications', publicationsRoutes);
 app.use('/api/lab', labRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({

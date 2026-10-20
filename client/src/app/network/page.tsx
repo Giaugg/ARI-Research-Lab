@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { 
   Network as NetworkIcon, 
   Search, 
@@ -10,11 +9,7 @@ import {
   RotateCw, 
   Users, 
   ArrowRight, 
-  Layers, 
-  Code2, 
-  Clock,
-  Sparkles,
-  GitCommit
+  Layers
 } from 'lucide-react';
 import { api, User } from '@/lib/api';
 import NetworkGraphCanvas from '@/components/NetworkGraphCanvas';
@@ -163,34 +158,35 @@ export default function NetworkPage() {
     else if (activeTab === 'pathfinder') handleRunPathFinder();
     else if (activeTab === 'cycles') handleRunCycles();
     else if (activeTab === 'communities') handleLoadCommunities();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-blue-50 text-blue-700 border border-blue-200 font-semibold">
               Graph Traversal & Recursive Queries
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
             Academic Researcher Network Explorer
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Analyzing directed relationships, shortest connection paths, and cycles with PostgreSQL <code className="text-cyan-300 font-mono">WITH RECURSIVE</code>
+          <p className="text-xs sm:text-sm text-slate-600 mt-1">
+            Analyzing directed relationships, shortest connection paths, and cycles with PostgreSQL <code className="text-blue-700 font-mono bg-blue-50 px-1 py-0.5 rounded border border-blue-100">WITH RECURSIVE</code>
           </p>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex flex-wrap gap-1 bg-slate-900 border border-slate-800 p-1.5 rounded-xl">
+        <div className="flex flex-wrap gap-1 bg-white border border-slate-200 p-1.5 rounded-xl shadow-xs">
           <button
             onClick={() => setActiveTab('reachability')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               activeTab === 'reachability'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
@@ -201,8 +197,8 @@ export default function NetworkPage() {
             onClick={() => setActiveTab('pathfinder')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               activeTab === 'pathfinder'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
             <Route className="w-3.5 h-3.5" />
@@ -213,8 +209,8 @@ export default function NetworkPage() {
             onClick={() => setActiveTab('cycles')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               activeTab === 'cycles'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
             <RotateCw className="w-3.5 h-3.5" />
@@ -225,8 +221,8 @@ export default function NetworkPage() {
             onClick={() => setActiveTab('communities')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               activeTab === 'communities'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
             <Users className="w-3.5 h-3.5" />
@@ -240,13 +236,13 @@ export default function NetworkPage() {
         
         {/* Left Column: Interactive Visual Canvas */}
         <div className="lg:col-span-7 space-y-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs">
             <div className="flex items-center justify-between mb-3 px-2">
               <div className="flex items-center gap-2">
-                <NetworkIcon className="w-4 h-4 text-cyan-400" />
-                <span className="text-xs font-bold text-slate-200">Interactive Directed Topology Canvas</span>
+                <NetworkIcon className="w-4 h-4 text-blue-600" />
+                <span className="text-xs font-bold text-slate-800">Interactive Directed Topology Canvas</span>
               </div>
-              <span className="text-[11px] font-mono text-slate-400">
+              <span className="text-[11px] font-mono text-slate-500">
                 {graphData.nodes.length} nodes • {graphData.edges.length} edges
               </span>
             </div>
@@ -264,14 +260,14 @@ export default function NetworkPage() {
               }}
             />
 
-            <div className="flex items-center justify-between text-[11px] text-slate-400 px-2 pt-3 border-t border-slate-800 mt-2 font-mono">
+            <div className="flex items-center justify-between text-[11px] text-slate-500 px-2 pt-3 border-t border-slate-100 mt-2 font-mono">
               <div className="flex items-center gap-3">
                 <span className="flex items-center gap-1">
                   <span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block"></span>
                   <span>Active Researcher</span>
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block"></span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-sky-600 inline-block"></span>
                   <span>Traversed Path</span>
                 </span>
               </div>
@@ -285,25 +281,25 @@ export default function NetworkPage() {
 
           {/* TAB 1: N-Hop Reachability */}
           {activeTab === 'reachability' && (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
-              <div className="border-b border-slate-800 pb-3">
-                <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-cyan-400" />
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-4">
+              <div className="border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-blue-600" />
                   <span>Problem 1: N-Hop Follower Reachability</span>
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  Discover all researchers reachable within <code className="text-cyan-300 font-mono">depth &lt; N</code> hops while checking cycles via array path.
+                <p className="text-xs text-slate-500 mt-1">
+                  Discover all researchers reachable within <code className="text-blue-700 font-mono bg-blue-50 px-1 py-0.5 rounded border border-blue-100">depth &lt; N</code> hops while checking cycles via array path.
                 </p>
               </div>
 
               {/* Controls */}
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">Starting Researcher</label>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Starting Researcher</label>
                   <select
                     value={reachStartUser}
                     onChange={(e) => setReachStartUser(parseInt(e.target.value, 10))}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                   >
                     {allUsers.map((u) => (
                       <option key={u.user_id} value={u.user_id}>
@@ -314,8 +310,8 @@ export default function NetworkPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                    Max Depth: <span className="text-cyan-400 font-mono font-bold">{reachMaxDepth} hops</span>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                    Max Depth: <span className="text-blue-600 font-mono font-bold">{reachMaxDepth} hops</span>
                   </label>
                   <input
                     type="range"
@@ -323,7 +319,7 @@ export default function NetworkPage() {
                     max="5"
                     value={reachMaxDepth}
                     onChange={(e) => setReachMaxDepth(parseInt(e.target.value, 10))}
-                    className="w-full mt-2 accent-blue-500 cursor-pointer"
+                    className="w-full mt-2 accent-blue-600 cursor-pointer"
                   />
                 </div>
               </div>
@@ -331,7 +327,7 @@ export default function NetworkPage() {
               <button
                 onClick={handleRunReachability}
                 disabled={reachLoading}
-                className="w-full py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm"
+                className="w-full py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-colors shadow-xs"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${reachLoading ? 'animate-spin' : ''}`} />
                 <span>Execute Recursive Traversal</span>
@@ -339,9 +335,9 @@ export default function NetworkPage() {
 
               {/* Execution Meta */}
               {reachMeta && (
-                <div className="flex items-center justify-between text-xs font-mono bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-slate-300">
-                  <span>Reachable: <strong className="text-cyan-400">{reachMeta.count} scholars</strong></span>
-                  <span>Duration: <strong className="text-cyan-400">{reachMeta.executionMs} ms</strong></span>
+                <div className="flex items-center justify-between text-xs font-mono bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-slate-700">
+                  <span>Reachable: <strong className="text-blue-600">{reachMeta.count} scholars</strong></span>
+                  <span>Duration: <strong className="text-blue-600">{reachMeta.executionMs} ms</strong></span>
                 </div>
               )}
 
@@ -355,17 +351,17 @@ export default function NetworkPage() {
                         setHighlightPath(item.sample_paths[0]);
                       }
                     }}
-                    className="p-2.5 rounded-lg bg-slate-950/70 border border-slate-800/80 hover:border-slate-700 transition-colors cursor-pointer group"
+                    className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 hover:border-blue-400 hover:bg-blue-50/20 transition-colors cursor-pointer group"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <img
                           src={item.avatar_url}
                           alt={item.name}
-                          className="w-7 h-7 rounded-full object-cover"
+                          className="w-7 h-7 rounded-full object-cover ring-1 ring-slate-200"
                         />
                         <div>
-                          <p className="text-xs font-semibold text-slate-200 group-hover:text-blue-400 transition-colors">
+                          <p className="text-xs font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">
                             {item.name}
                           </p>
                           <p className="text-[10px] text-slate-500">{item.institution}</p>
@@ -373,14 +369,14 @@ export default function NetworkPage() {
                       </div>
 
                       <div className="text-right">
-                        <span className="inline-block px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/30 text-[10px] font-mono">
+                        <span className="inline-block px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-mono font-medium">
                           Distance: {item.distance} {item.distance === 1 ? 'hop' : 'hops'}
                         </span>
                       </div>
                     </div>
 
                     {item.sample_paths && item.sample_paths.length > 0 && (
-                      <div className="mt-2 text-[10px] font-mono text-cyan-400/80 truncate">
+                      <div className="mt-2 text-[10px] font-mono text-blue-600 truncate">
                         Path: [{item.sample_paths[0].join(' → ')}]
                       </div>
                     )}
@@ -392,13 +388,13 @@ export default function NetworkPage() {
 
           {/* TAB 2: Shortest Path & Connection Finder */}
           {activeTab === 'pathfinder' && (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
-              <div className="border-b border-slate-800 pb-3">
-                <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-                  <Route className="w-4 h-4 text-cyan-400" />
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-4">
+              <div className="border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Route className="w-4 h-4 text-blue-600" />
                   <span>Problem 2: Researcher Shortest Path Finder</span>
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-slate-500 mt-1">
                   Find degrees of separation and shortest follow sequences between two academic scientists.
                 </p>
               </div>
@@ -406,11 +402,11 @@ export default function NetworkPage() {
               {/* Source & Target Selector */}
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">Source (A)</label>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Source (A)</label>
                   <select
                     value={sourceId}
                     onChange={(e) => setSourceId(parseInt(e.target.value, 10))}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                   >
                     {allUsers.map((u) => (
                       <option key={u.user_id} value={u.user_id}>
@@ -421,11 +417,11 @@ export default function NetworkPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">Target (B)</label>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Target (B)</label>
                   <select
                     value={targetId}
                     onChange={(e) => setTargetId(parseInt(e.target.value, 10))}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                   >
                     {allUsers.map((u) => (
                       <option key={u.user_id} value={u.user_id}>
@@ -439,7 +435,7 @@ export default function NetworkPage() {
               <button
                 onClick={handleRunPathFinder}
                 disabled={pathLoading || sourceId === targetId}
-                className="w-full py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm"
+                className="w-full py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-colors shadow-xs"
               >
                 <Search className="w-3.5 h-3.5" />
                 <span>Compute Connection Paths</span>
@@ -447,18 +443,18 @@ export default function NetworkPage() {
 
               {/* Path Finder Meta */}
               {pathMeta && (
-                <div className="flex items-center justify-between text-xs font-mono bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-slate-300">
+                <div className="flex items-center justify-between text-xs font-mono bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-slate-700">
                   <span>
-                    Shortest: <strong className="text-cyan-400">{pathMeta.shortestDistance ? `${pathMeta.shortestDistance} degrees` : 'Unreachable'}</strong>
+                    Shortest: <strong className="text-blue-600">{pathMeta.shortestDistance ? `${pathMeta.shortestDistance} degrees` : 'Unreachable'}</strong>
                   </span>
-                  <span>Execution: <strong className="text-cyan-400">{pathMeta.executionMs} ms</strong></span>
+                  <span>Execution: <strong className="text-blue-600">{pathMeta.executionMs} ms</strong></span>
                 </div>
               )}
 
               {/* Discovered Paths */}
               <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
                 {foundPaths.length === 0 ? (
-                  <p className="text-xs text-slate-500 text-center py-6">
+                  <p className="text-xs text-slate-400 text-center py-6">
                     No connection path found within 5 hops.
                   </p>
                 ) : (
@@ -466,11 +462,11 @@ export default function NetworkPage() {
                     <div
                       key={idx}
                       onClick={() => setHighlightPath(p.path)}
-                      className="p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-cyan-500/50 transition-all cursor-pointer"
+                      className="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-blue-400 hover:bg-blue-50/20 transition-all cursor-pointer"
                     >
                       <div className="flex items-center justify-between text-xs mb-2">
-                        <span className="font-bold text-slate-200">Path #{idx + 1}</span>
-                        <span className="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 text-[10px] font-mono border border-cyan-800">
+                        <span className="font-bold text-slate-900">Path #{idx + 1}</span>
+                        <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-mono border border-blue-200 font-semibold">
                           {p.distance} steps
                         </span>
                       </div>
@@ -479,11 +475,11 @@ export default function NetworkPage() {
                       <div className="flex flex-wrap items-center gap-1.5">
                         {p.path_nodes.map((node: any, nIdx: number) => (
                           <React.Fragment key={node.user_id}>
-                            <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-[11px] text-slate-300 font-medium">
+                            <span className="px-2 py-0.5 rounded bg-white border border-slate-200 text-[11px] text-slate-700 font-medium">
                               {node.name.split(' ')[0]} {node.name.split(' ')[1] || ''}
                             </span>
                             {nIdx < p.path_nodes.length - 1 && (
-                              <ArrowRight className="w-3 h-3 text-cyan-400" />
+                              <ArrowRight className="w-3 h-3 text-blue-600" />
                             )}
                           </React.Fragment>
                         ))}
@@ -495,13 +491,13 @@ export default function NetworkPage() {
 
               {/* Mutual Followers section */}
               {mutualFollowers.length > 0 && (
-                <div className="pt-3 border-t border-slate-800">
-                  <div className="text-xs font-bold text-slate-300 mb-2">
+                <div className="pt-3 border-t border-slate-100">
+                  <div className="text-xs font-bold text-slate-700 mb-2">
                     Mutual Followers ({mutualFollowers.length}):
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {mutualFollowers.map((m) => (
-                      <span key={m.user_id} className="text-[11px] px-2 py-1 bg-slate-950 rounded text-slate-300 border border-slate-800">
+                      <span key={m.user_id} className="text-[11px] px-2 py-1 bg-slate-50 rounded text-slate-700 border border-slate-200">
                         {m.name}
                       </span>
                     ))}
@@ -513,23 +509,23 @@ export default function NetworkPage() {
 
           {/* TAB 3: Cycle Detection */}
           {activeTab === 'cycles' && (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
-              <div className="border-b border-slate-800 pb-3">
-                <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-                  <RotateCw className="w-4 h-4 text-cyan-400" />
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-4">
+              <div className="border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <RotateCw className="w-4 h-4 text-blue-600" />
                   <span>Problem 5: Cycle Detection in Academic Follows</span>
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-slate-500 mt-1">
                   Identify closed feedback loops (e.g. A → B → C → A) in the directed network.
                 </p>
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Anchor Node</label>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Anchor Node</label>
                 <select
                   value={cycleStartUser}
                   onChange={(e) => setCycleStartUser(parseInt(e.target.value, 10))}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                 >
                   {allUsers.map((u) => (
                     <option key={u.user_id} value={u.user_id}>
@@ -542,7 +538,7 @@ export default function NetworkPage() {
               <button
                 onClick={handleRunCycles}
                 disabled={cyclesLoading}
-                className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm"
+                className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-colors shadow-xs"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${cyclesLoading ? 'animate-spin' : ''}`} />
                 <span>Detect Directed Cycles</span>
@@ -550,7 +546,7 @@ export default function NetworkPage() {
 
               <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                 {cycles.length === 0 ? (
-                  <p className="text-xs text-slate-500 text-center py-6">
+                  <p className="text-xs text-slate-400 text-center py-6">
                     No closed cycles detected for this researcher.
                   </p>
                 ) : (
@@ -558,13 +554,13 @@ export default function NetworkPage() {
                     <div
                       key={idx}
                       onClick={() => setHighlightPath(c.path)}
-                      className="p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-cyan-500/50 transition-all cursor-pointer"
+                      className="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-blue-400 hover:bg-blue-50/20 transition-all cursor-pointer"
                     >
                       <div className="flex items-center justify-between text-xs mb-1.5">
-                        <span className="font-bold text-cyan-400">Cycle Loop #{idx + 1}</span>
-                        <span className="text-[10px] font-mono text-slate-400">Length: {c.cycle_length} nodes</span>
+                        <span className="font-bold text-blue-700">Cycle Loop #{idx + 1}</span>
+                        <span className="text-[10px] font-mono text-slate-500">Length: {c.cycle_length} nodes</span>
                       </div>
-                      <div className="text-[11px] font-mono text-slate-300">
+                      <div className="text-[11px] font-mono text-slate-700">
                         {c.cycle_members.map((m: any) => m.name.split(' ')[0]).join(' → ')}
                       </div>
                     </div>
@@ -576,27 +572,27 @@ export default function NetworkPage() {
 
           {/* TAB 4: Shared Communities */}
           {activeTab === 'communities' && (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
-              <div className="border-b border-slate-800 pb-3">
-                <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-cyan-400" />
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-4">
+              <div className="border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-blue-600" />
                   <span>Shared Research Communities</span>
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-slate-500 mt-1">
                   Pairs of researchers sharing common research lab affiliations.
                 </p>
               </div>
 
               <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
                 {communities.map((comm, idx) => (
-                  <div key={idx} className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs">
-                    <div className="flex items-center justify-between font-semibold text-slate-200 mb-1">
+                  <div key={idx} className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+                    <div className="flex items-center justify-between font-semibold text-slate-900 mb-1">
                       <span>{comm.researcher_1_name} & {comm.researcher_2_name}</span>
-                      <span className="text-cyan-400 font-mono text-[11px]">
+                      <span className="text-blue-600 font-mono text-[11px]">
                         {comm.shared_group_count} common labs
                       </span>
                     </div>
-                    <div className="text-[11px] text-slate-400">
+                    <div className="text-[11px] text-slate-500">
                       Labs: {comm.shared_groups.join(', ')}
                     </div>
                   </div>

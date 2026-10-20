@@ -29,26 +29,26 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-slate-950 text-slate-100 font-sans selection:bg-blue-600 selection:text-white">
-        <Suspense fallback={<div className="h-16 bg-slate-900 border-b border-slate-800" />}>
+      <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 font-sans selection:bg-blue-100 selection:text-blue-900">
+        <Suspense fallback={<div className="h-16 bg-white border-b border-slate-200" />}>
           <Navbar />
         </Suspense>
-        <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading Academic Module...</div>}>
+        <Suspense fallback={<div className="p-8 text-center text-slate-500">Loading Academic Module...</div>}>
           <main className="flex-1">{children}</main>
         </Suspense>
         
         {/* Academic Footer */}
-        <footer className="border-t border-slate-900 bg-slate-950/80 py-8 text-center text-xs text-slate-500">
+        <footer className="border-t border-slate-200 bg-white py-8 text-center text-xs text-slate-500 mt-12">
           <div className="max-w-7xl mx-auto px-4 space-y-2">
-            <p className="font-semibold text-slate-400">
+            <p className="font-semibold text-slate-700">
               ARI Research Lab — Academic Collaboration & Discourse Network
             </p>
-            <p>
+            <p className="text-slate-500">
               Developed for PostgreSQL recursive graph research (WITH RECURSIVE), tree hierarchy indexing, and query plan optimization.
             </p>
-            <div className="flex justify-center gap-4 pt-1 font-mono text-[11px] text-slate-600">
+            <div className="flex justify-center items-center gap-4 pt-1 font-mono text-[11px] text-slate-400">
               <span>PostgreSQL 18.1</span>
               <span>•</span>
               <span>Next.js 16 + React 19</span>

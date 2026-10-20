@@ -112,6 +112,16 @@ export const createComment = async (req: Request, res: Response) => {
     const comment = insertRes.rows[0];
     const userRes = await query(`SELECT name, avatar_url, institution FROM users WHERE user_id = $1`, [currentUserId]);
 
+    // Notify post author if not self
+    const postRes = await query(`SELECT author_id, title FROM posts WHERE post_id = $1`, [postId]);
+    if (postRes.rows.length > 0 && postRes.rows[0].author_id !== currentUserId) {
+      const commenterName = userRes.rows[0]?.name || 'Một nhà nghiên cứu';
+      await query(`
+        INSERT INTO notifications (user_id, sender_id, type, title, message, link)
+        VALUES ($1, $2, 'comment', 'Bình luận mới về bài viết', $3, $4)
+      `, [postRes.rows[0].author_id, currentUserId, `${commenterName} đã bình luận bài viết: "${postRes.rows[0].title.slice(0, 60)}..."`, `/posts/${postId}`]);
+    }
+
     return res.status(201).json({
       comment: {
         ...comment,

@@ -8,7 +8,7 @@ export const getUsers = async (req: Request, res: Response) => {
 
     let sql = `
       SELECT 
-        u.user_id, u.name, u.email, u.institution, u.bio, u.research_fields, u.avatar_url,
+        u.user_id, u.name, u.email, u.role, u.institution, u.bio, u.research_fields, u.avatar_url,
         (SELECT COUNT(*) FROM follows WHERE follower_id = u.user_id) AS following_count,
         (SELECT COUNT(*) FROM follows WHERE following_id = u.user_id) AS followers_count,
         (SELECT COUNT(*) FROM group_members WHERE user_id = u.user_id) AS groups_count,
@@ -117,6 +117,15 @@ export const toggleFollow = async (req: Request, res: Response) => {
       return res.json({ following: false, message: 'Unfollowed successfully.' });
     } else {
       await query(`INSERT INTO follows (follower_id, following_id) VALUES ($1, $2)`, [currentUserId, targetUserId]);
+      
+      // Notify target user
+      const followerRes = await query(`SELECT name FROM users WHERE user_id = $1`, [currentUserId]);
+      const followerName = followerRes.rows[0]?.name || 'Một nhà nghiên cứu';
+      await query(`
+        INSERT INTO notifications (user_id, sender_id, type, title, message, link)
+        VALUES ($1, $2, 'follow', 'Người theo dõi mới', $3, $4)
+      `, [targetUserId, currentUserId, `${followerName} đã bắt đầu theo dõi hồ sơ học thuật của bạn.`, `/profile/${currentUserId}`]);
+
       return res.json({ following: true, message: 'Followed successfully.' });
     }
   } catch (error: any) {
@@ -160,6 +169,75 @@ export const getMutualConnections = async (req: Request, res: Response) => {
       mutualFollowers: mutualFollowers.rows,
       sharedGroups: sharedGroups.rows
     });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+export const updateUser = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const currentUserId = req.headers['x-user-id'] ? parseInt(req.headers['x-user-id'] as string, 10) : 1;
+    const targetUserId = parseInt(id as string, 10);
+
+    if (currentUserId !== targetUserId) {
+      return res.status(403).json({ error: 'Bạn chỉ có quyền sửa thông tin hồ sơ của chính mình.' });
+    }
+
+    const { name, institution, bio, research_fields, avatar_url, role } = req.body;
+
+    const fieldsToUpdate: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    if (name !== undefined) {
+      fieldsToUpdate.push(`name = $${paramIndex++}`);
+      values.push(name.trim());
+    }
+    if (role !== undefined && ['admin', 'pi', 'researcher', 'student'].includes(role)) {
+      fieldsToUpdate.push(`role = $${paramIndex++}`);
+      values.push(role);
+    }
+    if (institution !== undefined) {
+      fieldsToUpdate.push(`institution = $${paramIndex++}`);
+      values.push(institution.trim());
+    }
+    if (bio !== undefined) {
+      fieldsToUpdate.push(`bio = $${paramIndex++}`);
+      values.push(bio.trim());
+    }
+    if (research_fields !== undefined) {
+      const rfArray = Array.isArray(research_fields)
+        ? research_fields
+        : typeof research_fields === 'string'
+          ? research_fields.split(',').map((f: string) => f.trim()).filter(Boolean)
+          : [];
+      fieldsToUpdate.push(`research_fields = $${paramIndex++}`);
+      values.push(rfArray);
+    }
+    if (avatar_url !== undefined && avatar_url.trim() !== '') {
+      fieldsToUpdate.push(`avatar_url = $${paramIndex++}`);
+      values.push(avatar_url.trim());
+    }
+
+    if (fieldsToUpdate.length === 0) {
+      return res.status(400).json({ error: 'Không có thông tin nào để cập nhật.' });
+    }
+
+    values.push(targetUserId);
+    const sql = `
+      UPDATE users 
+      SET ${fieldsToUpdate.join(', ')} 
+      WHERE user_id = $${paramIndex}
+      RETURNING user_id, name, email, role, institution, bio, research_fields, avatar_url, created_at
+    `;
+
+    const result = await query(sql, values);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy người dùng.' });
+    }
+
+    return res.json({ message: 'Cập nhật thông tin thành công', user: result.rows[0] });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }

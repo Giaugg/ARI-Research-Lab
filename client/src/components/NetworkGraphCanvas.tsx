@@ -108,12 +108,12 @@ export default function NetworkGraphCanvas({
         ctx.lineTo(t.x, t.y);
 
         if (isHighlighted) {
-          ctx.strokeStyle = '#38bdf8'; // bright cyan
-          ctx.lineWidth = 3.5;
-          ctx.shadowColor = '#38bdf8';
-          ctx.shadowBlur = 10;
+          ctx.strokeStyle = '#2563eb'; // bright academic blue
+          ctx.lineWidth = 3;
+          ctx.shadowColor = 'rgba(37, 99, 235, 0.35)';
+          ctx.shadowBlur = 8;
         } else {
-          ctx.strokeStyle = 'rgba(71, 85, 105, 0.45)'; // slate-600
+          ctx.strokeStyle = 'rgba(148, 163, 184, 0.55)'; // slate-400
           ctx.lineWidth = 1.2;
           ctx.shadowBlur = 0;
         }
@@ -132,7 +132,7 @@ export default function NetworkGraphCanvas({
         ctx.lineTo(stopX - headlen * Math.cos(angle - Math.PI / 6), stopY - headlen * Math.sin(angle - Math.PI / 6));
         ctx.lineTo(stopX - headlen * Math.cos(angle + Math.PI / 6), stopY - headlen * Math.sin(angle + Math.PI / 6));
         ctx.closePath();
-        ctx.fillStyle = isHighlighted ? '#38bdf8' : 'rgba(100, 116, 139, 0.7)';
+        ctx.fillStyle = isHighlighted ? '#2563eb' : 'rgba(148, 163, 184, 0.8)';
         ctx.fill();
       });
 
@@ -150,29 +150,29 @@ export default function NetworkGraphCanvas({
         if (isSelected || isPathMember) {
           ctx.beginPath();
           ctx.arc(n.x, n.y, radius + 4, 0, 2 * Math.PI);
-          ctx.fillStyle = isSelected ? 'rgba(59, 130, 246, 0.35)' : 'rgba(56, 189, 248, 0.35)';
+          ctx.fillStyle = isSelected ? 'rgba(37, 99, 235, 0.2)' : 'rgba(2, 132, 199, 0.2)';
           ctx.fill();
         }
 
         // Main node circle
         ctx.beginPath();
         ctx.arc(n.x, n.y, radius, 0, 2 * Math.PI);
-        ctx.fillStyle = isSelected ? '#2563eb' : isPathMember ? '#0284c7' : '#1e293b';
+        ctx.fillStyle = isSelected ? '#2563eb' : isPathMember ? '#0284c7' : isHovered ? '#f1f5f9' : '#ffffff';
         ctx.fill();
-        ctx.strokeStyle = isSelected ? '#60a5fa' : isPathMember ? '#38bdf8' : '#475569';
+        ctx.strokeStyle = isSelected ? '#1d4ed8' : isPathMember ? '#0369a1' : isHovered ? '#3b82f6' : '#94a3b8';
         ctx.lineWidth = isSelected || isPathMember ? 2.5 : 1.5;
         ctx.stroke();
 
         // Node ID or initials inside circle
         ctx.font = 'bold 10px monospace';
-        ctx.fillStyle = '#f8fafc';
+        ctx.fillStyle = isSelected || isPathMember ? '#ffffff' : '#1e293b';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(n.id.toString(), n.x, n.y);
 
         // Label below node
         ctx.font = isSelected || isPathMember ? 'bold 11px sans-serif' : '10px sans-serif';
-        ctx.fillStyle = isSelected || isPathMember ? '#e0f2fe' : '#94a3b8';
+        ctx.fillStyle = isSelected ? '#1d4ed8' : isPathMember ? '#0369a1' : '#475569';
         ctx.fillText(n.label.split(' ')[0] + ' ' + (n.label.split(' ')[1] || ''), n.x, n.y + radius + 11);
       });
 
@@ -234,7 +234,7 @@ export default function NetworkGraphCanvas({
   };
 
   return (
-    <div className="relative w-full overflow-hidden rounded-xl bg-slate-950 border border-slate-800">
+    <div className="relative w-full overflow-hidden rounded-xl bg-slate-50/70 border border-slate-200">
       <canvas
         ref={canvasRef}
         width={800}
@@ -247,17 +247,17 @@ export default function NetworkGraphCanvas({
 
       {/* Hover Info Tooltip */}
       {hoveredNode && (
-        <div className="absolute top-3 left-3 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-lg p-2.5 shadow-xl pointer-events-none text-xs">
-          <p className="font-bold text-slate-100">{hoveredNode.label} (ID: {hoveredNode.id})</p>
+        <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md border border-slate-200 rounded-lg p-2.5 shadow-lg pointer-events-none text-xs">
+          <p className="font-bold text-slate-900">{hoveredNode.label} (ID: {hoveredNode.id})</p>
           {hoveredNode.institution && (
-            <p className="text-[11px] text-slate-400">{hoveredNode.institution}</p>
+            <p className="text-[11px] text-slate-500">{hoveredNode.institution}</p>
           )}
-          <p className="text-[10px] text-cyan-400 font-mono mt-1">Click to select & inspect graph</p>
+          <p className="text-[10px] text-blue-600 font-mono mt-1">Click to select & inspect graph</p>
         </div>
       )}
 
       {/* Canvas Controls Info */}
-      <div className="absolute bottom-3 right-3 bg-slate-900/80 backdrop-blur-sm border border-slate-800 rounded-md px-2.5 py-1 text-[10px] font-mono text-slate-400 pointer-events-none">
+      <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-xs border border-slate-200 rounded-md px-2.5 py-1 text-[10px] font-mono text-slate-500 pointer-events-none shadow-xs">
         Drag nodes to rearrange • Click to inspect
       </div>
     </div>

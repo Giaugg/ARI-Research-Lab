@@ -4,6 +4,7 @@ export interface User {
   user_id: number;
   name: string;
   email: string;
+  role?: 'admin' | 'pi' | 'researcher' | 'student';
   institution: string;
   bio: string;
   research_fields: string[];
@@ -20,6 +21,7 @@ export interface Post {
   post_id: number;
   author_id: number;
   group_id?: number | null;
+  scope?: 'community' | 'personal' | 'lab';
   post_type: 'discussion' | 'question' | 'research' | 'paper_share';
   title: string;
   content: string;
@@ -32,6 +34,21 @@ export interface Post {
   comments_count: number;
   is_liked: boolean;
   tags: string[];
+}
+
+export interface NotificationItem {
+  notification_id: number;
+  user_id: number;
+  sender_id?: number | null;
+  type: 'lab_invite' | 'post_like' | 'comment' | 'follow' | 'system';
+  title: string;
+  message: string;
+  link?: string | null;
+  is_read: boolean;
+  created_at: string;
+  sender_name?: string | null;
+  sender_avatar?: string | null;
+  sender_institution?: string | null;
 }
 
 export interface CommentItem {
@@ -55,6 +72,7 @@ export interface ResearchGroup {
   topic: string;
   description: string;
   avatar_url: string;
+  invite_code?: string;
   created_at: string;
   owner_name: string;
   owner_institution: string;
@@ -86,12 +104,30 @@ export const getActiveUserId = (): number => {
     const stored = localStorage.getItem('ari_active_user_id');
     if (stored) return parseInt(stored, 10);
   }
-  return 1; // Default to Prof. Stonebraker
+  return 1; // Default fallback to Prof. Stonebraker for initial view
 };
 
-export const setActiveUserId = (userId: number) => {
+export const isLoggedIn = (): boolean => {
   if (typeof window !== 'undefined') {
-    localStorage.setItem('ari_active_user_id', userId.toString());
+    return localStorage.getItem('ari_active_user_id') !== null;
+  }
+  return false;
+};
+
+export const logout = () => {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('ari_active_user_id');
+    window.dispatchEvent(new Event('ari_user_changed'));
+  }
+};
+
+export const setActiveUserId = (userId: number | null) => {
+  if (typeof window !== 'undefined') {
+    if (userId === null) {
+      localStorage.removeItem('ari_active_user_id');
+    } else {
+      localStorage.setItem('ari_active_user_id', userId.toString());
+    }
     window.dispatchEvent(new Event('ari_user_changed'));
   }
 };
@@ -108,6 +144,32 @@ export const api = {
     return res.json();
   },
 
+  login: async (credentials: { email: string; password?: string }): Promise<{ user?: User; message?: string; error?: string }> => {
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(credentials)
+    });
+    return res.json();
+  },
+
+  register: async (userData: {
+    name: string;
+    email: string;
+    password?: string;
+    role?: 'admin' | 'pi' | 'researcher' | 'student';
+    institution?: string;
+    bio?: string;
+    research_fields?: string[];
+  }): Promise<{ user?: User; message?: string; error?: string }> => {
+    const res = await fetch(`${API_BASE}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData)
+    });
+    return res.json();
+  },
+
   // Users
   getUsers: async (search?: string): Promise<{ users: User[] }> => {
     const q = search ? `?search=${encodeURIComponent(search)}` : '';
@@ -117,6 +179,25 @@ export const api = {
 
   getUserById: async (id: number | string) => {
     const res = await fetch(`${API_BASE}/users/${id}`, { headers: getHeaders() });
+    return res.json();
+  },
+
+  updateUser: async (
+    userId: number | string,
+    data: {
+      name?: string;
+      role?: 'admin' | 'pi' | 'researcher' | 'student';
+      institution?: string;
+      bio?: string;
+      research_fields?: string[];
+      avatar_url?: string;
+    }
+  ): Promise<{ user?: User; message?: string; error?: string }> => {
+    const res = await fetch(`${API_BASE}/users/${userId}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
     return res.json();
   },
 
@@ -136,6 +217,8 @@ export const api = {
   // Posts
   getPosts: async (params?: { 
     group_id?: number | string; 
+    author_id?: number | string;
+    scope?: 'community' | 'personal' | 'lab';
     tag?: string; 
     post_type?: string; 
     search?: string; 
@@ -148,6 +231,8 @@ export const api = {
   }) => {
     const queryParams = new URLSearchParams();
     if (params?.group_id) queryParams.append('group_id', params.group_id.toString());
+    if (params?.author_id) queryParams.append('author_id', params.author_id.toString());
+    if (params?.scope) queryParams.append('scope', params.scope);
     if (params?.tag) queryParams.append('tag', params.tag);
     if (params?.post_type) queryParams.append('post_type', params.post_type);
     if (params?.search) queryParams.append('search', params.search);
@@ -167,7 +252,14 @@ export const api = {
     return res.json();
   },
 
-  createPost: async (postData: { title: string; content: string; post_type: string; group_id?: number | null; tags?: string[] }) => {
+  createPost: async (postData: { 
+    title: string; 
+    content: string; 
+    post_type: string; 
+    scope?: 'community' | 'personal' | 'lab';
+    group_id?: number | null; 
+    tags?: string[] 
+  }) => {
     const res = await fetch(`${API_BASE}/posts`, {
       method: 'POST',
       headers: getHeaders(),
@@ -236,6 +328,51 @@ export const api = {
   toggleJoinGroup: async (groupId: number | string) => {
     const res = await fetch(`${API_BASE}/groups/${groupId}/join`, {
       method: 'POST',
+      headers: getHeaders()
+    });
+    return res.json();
+  },
+
+  getGroupByInviteCode: async (code: string) => {
+    const res = await fetch(`${API_BASE}/groups/invite/${code}`, { headers: getHeaders() });
+    return res.json();
+  },
+
+  joinGroupByLink: async (invite_code: string) => {
+    const res = await fetch(`${API_BASE}/groups/join-by-link`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ invite_code })
+    });
+    return res.json();
+  },
+
+  inviteUserToGroup: async (groupId: number | string, target_user_id: number) => {
+    const res = await fetch(`${API_BASE}/groups/${groupId}/invite`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ target_user_id })
+    });
+    return res.json();
+  },
+
+  // Notifications
+  getNotifications: async (): Promise<{ notifications: NotificationItem[]; unreadCount: number }> => {
+    const res = await fetch(`${API_BASE}/notifications`, { headers: getHeaders() });
+    return res.json();
+  },
+
+  markNotificationAsRead: async (id: number | string) => {
+    const res = await fetch(`${API_BASE}/notifications/${id}/read`, {
+      method: 'PUT',
+      headers: getHeaders()
+    });
+    return res.json();
+  },
+
+  markAllNotificationsAsRead: async () => {
+    const res = await fetch(`${API_BASE}/notifications/read-all`, {
+      method: 'PUT',
       headers: getHeaders()
     });
     return res.json();

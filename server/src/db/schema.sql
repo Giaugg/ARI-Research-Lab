@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
     name VARCHAR(120) NOT NULL,
     email VARCHAR(150) UNIQUE NOT NULL,
     password_hash VARCHAR(255) DEFAULT 'hashed_pwd_default',
+    role VARCHAR(30) DEFAULT 'researcher' CHECK (role IN ('admin', 'pi', 'researcher', 'student')),
     bio TEXT,
     institution VARCHAR(200),
     research_fields TEXT[] DEFAULT '{}',
@@ -33,6 +34,7 @@ CREATE TABLE IF NOT EXISTS research_groups (
     description TEXT,
     owner_id INT REFERENCES users(user_id) ON DELETE SET NULL,
     avatar_url TEXT,
+    invite_code VARCHAR(64) UNIQUE DEFAULT md5(random()::text),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -50,6 +52,7 @@ CREATE TABLE IF NOT EXISTS posts (
     post_id SERIAL PRIMARY KEY,
     author_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     group_id INT REFERENCES research_groups(group_id) ON DELETE SET NULL,
+    scope VARCHAR(30) DEFAULT 'community' CHECK (scope IN ('community', 'personal', 'lab')),
     post_type VARCHAR(30) DEFAULT 'discussion' CHECK (post_type IN ('discussion', 'question', 'research', 'paper_share')),
     title VARCHAR(300) NOT NULL,
     content TEXT NOT NULL,
@@ -105,6 +108,19 @@ CREATE TABLE IF NOT EXISTS publication_authors (
     user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     author_order INT DEFAULT 1,
     PRIMARY KEY (publication_id, user_id)
+);
+
+-- 12. Notifications Table
+CREATE TABLE IF NOT EXISTS notifications (
+    notification_id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    sender_id INT REFERENCES users(user_id) ON DELETE SET NULL,
+    type VARCHAR(50) NOT NULL, -- 'lab_invite', 'post_like', 'comment', 'follow', 'system'
+    title VARCHAR(200) NOT NULL,
+    message TEXT NOT NULL,
+    link TEXT,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Automated Full Text Search Vector update trigger

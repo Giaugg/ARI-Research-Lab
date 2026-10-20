@@ -6,6 +6,8 @@ export const getPosts = async (req: Request, res: Response) => {
     const currentUserId = req.headers['x-user-id'] ? parseInt(req.headers['x-user-id'] as string, 10) : 1;
     const { 
       group_id, 
+      author_id,
+      scope,
       tag, 
       post_type, 
       search, 
@@ -29,6 +31,18 @@ export const getPosts = async (req: Request, res: Response) => {
     if (group_id) {
       whereClauses.push(`p.group_id = $${paramIndex++}`);
       params.push(group_id);
+    }
+
+    // Filter by author
+    if (author_id) {
+      whereClauses.push(`p.author_id = $${paramIndex++}`);
+      params.push(author_id);
+    }
+
+    // Filter by scope ('community', 'personal', 'lab')
+    if (scope) {
+      whereClauses.push(`p.scope = $${paramIndex++}`);
+      params.push(scope);
     }
 
     // Filter by post_type
@@ -83,6 +97,7 @@ export const getPosts = async (req: Request, res: Response) => {
         p.post_id,
         p.author_id,
         p.group_id,
+        p.scope,
         p.post_type,
         p.title,
         p.content,
@@ -135,6 +150,7 @@ export const getPostById = async (req: Request, res: Response) => {
         p.post_id,
         p.author_id,
         p.group_id,
+        p.scope,
         p.post_type,
         p.title,
         p.content,
@@ -173,17 +189,30 @@ export const getPostById = async (req: Request, res: Response) => {
 export const createPost = async (req: Request, res: Response) => {
   try {
     const currentUserId = req.headers['x-user-id'] ? parseInt(req.headers['x-user-id'] as string, 10) : 1;
-    const { title, content, post_type = 'discussion', group_id, tags = [] } = req.body;
+    let { title, content, post_type = 'discussion', group_id, scope, tags = [] } = req.body;
 
     if (!title || !content) {
       return res.status(400).json({ error: 'Title and content are required.' });
     }
 
+    // Default scope determination
+    if (!scope || !['community', 'personal', 'lab'].includes(scope)) {
+      scope = group_id ? 'lab' : 'community';
+    }
+
+    if (scope === 'lab' && !group_id) {
+      return res.status(400).json({ error: 'Bài đăng phòng Lab bắt buộc phải chọn nhóm nghiên cứu (group_id).' });
+    }
+
+    if (scope !== 'lab') {
+      group_id = null;
+    }
+
     const insertPostRes = await query(
-      `INSERT INTO posts (author_id, group_id, post_type, title, content)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO posts (author_id, group_id, scope, post_type, title, content)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [currentUserId, group_id || null, post_type, title, content]
+      [currentUserId, group_id, scope, post_type, title, content]
     );
 
     const post = insertPostRes.rows[0];
@@ -227,6 +256,21 @@ export const toggleLike = async (req: Request, res: Response) => {
       return res.json({ liked: false });
     } else {
       await query(`INSERT INTO post_likes (post_id, user_id) VALUES ($1, $2)`, [postId, currentUserId]);
+
+      // Notify author of post
+      const postAuthorRes = await query(`SELECT author_id, title FROM posts WHERE post_id = $1`, [postId]);
+      if (postAuthorRes.rows.length > 0) {
+        const authorId = postAuthorRes.rows[0].author_id;
+        if (authorId !== currentUserId) {
+          const likerRes = await query(`SELECT name FROM users WHERE user_id = $1`, [currentUserId]);
+          const likerName = likerRes.rows[0]?.name || 'Một nhà nghiên cứu';
+          await query(`
+            INSERT INTO notifications (user_id, sender_id, type, title, message, link)
+            VALUES ($1, $2, 'post_like', 'Lượt thích bài viết mới', $3, $4)
+          `, [authorId, currentUserId, `${likerName} đã thích bài viết: "${postAuthorRes.rows[0].title.slice(0, 60)}..."`, `/posts/${postId}`]);
+        }
+      }
+
       return res.json({ liked: true });
     }
   } catch (error: any) {
