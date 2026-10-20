@@ -1,0 +1,11 @@
+**/node_modules/
+client/.next/
+client/out/
+server/dist/
+coverage/
+**/.env
+**/.env.*
+!**/.env.example
+*.tsbuildinfo
+.DS_Store
+*.pem
