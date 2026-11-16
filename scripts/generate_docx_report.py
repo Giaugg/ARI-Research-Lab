@@ -270,7 +270,22 @@ def build_docx_9_chapters():
              "hệ thống ROLLBACK TO SAVEPOINT bảo toàn thao tác hợp lệ trước đó.\n"
              "• Kịch bản Cạnh tranh Lost Update & Khóa dòng: Mô phỏng mất dữ liệu khi 2 session ghi đè, và giải pháp triệt để bằng khóa bi quan SELECT FOR UPDATE.\n"
              "• So sánh 3 mức cô lập: READ COMMITTED, REPEATABLE READ (Snapshot Isolation), và SERIALIZABLE (chống Write Skew).\n"
-             "• Kịch bản Bế tắc (Deadlock): Hai session tạo khóa chéo trên post_id = 1 và 2. Bộ Deadlock Detector tự động hủy 1 phiên sau 1.000 ms.")
+             "• Kịch bản Bế tắc (Deadlock): Hai session tạo khóa chéo trên post_id = 1 và 2. Bộ Deadlock Detector tự động hủy 1 phiên sau 1.000 ms."),
+            ("6.4. Trang Quản trị Chuyên sâu Cho Admin: Admin SQL Demo Studio (/admin)",
+             "Nhóm đã xây dựng riêng trang quản trị tại route /admin với 4 tab độc lập:\n"
+             "1. Tab 1 - Thống kê & Sinh dữ liệu lớn: Thống kê kích thước 12 bảng qua pg_total_relation_size(), tích hợp generate_series sinh hàng chục nghìn bản ghi chỉ trong <200ms.\n"
+             "2. Tab 2 - Demo 12 truy vấn SQL nâng cao: Chạy trực tiếp 12 truy vấn với bảng dữ liệu đầu ra thật, hiển thị thời gian chạy, số dòng và popup xem kế hoạch EXPLAIN.\n"
+             "3. Tab 3 - Đấu trường so sánh hiệu năng & Cây truy vấn: So sánh đối đầu có đối chứng dữ liệu đầu ra của cả 2 phía và Popup xem Cây kế hoạch thực thi EXPLAIN Plan Tree.\n"
+             "4. Tab 4 - Mô phỏng giao dịch đồng thời & ACID: Trực quan hóa dòng thời gian tương tác giữa 2 session và cơ chế khóa dòng của PostgreSQL."),
+            ("6.5. Thống kê chi tiết vị trí áp dụng trong Codebase & Vị trí tiêu biểu nhất",
+             "Ma trận thống kê toàn diện trong toàn bộ mã nguồn dự án:\n"
+             "1. WITH RECURSIVE: Áp dụng 16 lần (8 trong SQL scripts, 8 trong backend controllers). Vị trí tiêu biểu nhất: server/src/controllers/comments.controller.ts (dòng 13-43) duyệt cây bình luận phân cấp bằng sort_path.\n"
+             "2. Window Functions: Áp dụng 6 lần. Vị trí tiêu biểu nhất: server/src/db/advanced_queries.sql (dòng 136-138) dùng ROW_NUMBER(), DENSE_RANK() OVER (PARTITION BY scope) và AVG() OVER.\n"
+             "3. Transactions ACID: Áp dụng 28 lần. Vị trí tiêu biểu nhất: server/src/controllers/posts.controller.ts (dòng 210-245) quản lý giao dịch nguyên tử chèn bài viết + gán tags; và server/src/db/transaction_scenarios.sql (dòng 137-156) khóa dòng SELECT FOR UPDATE.\n"
+             "4. Chỉ mục vật lý: 12 chỉ mục chuyên biệt trong server/src/db/indexes.sql. Tiêu biểu: idx_posts_search (GIN) và idx_posts_created_id (Keyset seek).\n"
+             "5. PL/pgSQL & Trigger: 4 đối tượng. Tiêu biểu: trigger posts_tsvector_trigger tự động tính toán lexeme tại schema.sql:127.\n"
+             "6. Correlated Subqueries: 14 lần. Tiêu biểu: posts.controller.ts (dòng 105-112) tính like_count và cờ is_liked theo từng người dùng.\n"
+             "7. Dynamic SQL: 3 lần. Tiêu biểu: advanced_queries.sql (dòng 265-275) lọc dữ liệu động tham số hóa chống SQL Injection.")
         ]),
         ("CHƯƠNG 7: KIỂM THỬ VÀ ĐÁNH GIÁ HIỆU NĂNG", [
             ("7.1. Phương pháp thực nghiệm", 
@@ -282,7 +297,8 @@ def build_docx_9_chapters():
              "3. Tìm kiếm toàn văn FTS: Lý thuyết Quét chuỗi ILIKE O(N*M) vs GIN Inverted List O(log N). Thực tế: ILIKE 4.52ms vs GIN Bitmap Index Scan 0.38ms => Nhanh hơn 11.89 lần."),
             ("7.3. Kiểm thử ứng dụng phần mềm", 
              "Backend Node.js TypeScript: npm --prefix server run build hoàn thành với 0 lỗi biên dịch.\n"
-             "Frontend Next.js 16: npm --prefix client run lint đạt 0 warnings, 0 errors. Lệnh build tối ưu hóa 13 routes động thành công.")
+             "Frontend Next.js 16: npm --prefix client run lint đạt 0 warnings, 0 errors. Lệnh build tối ưu hóa 14 routes động thành công (bao gồm trang quản trị /admin và phòng thí nghiệm /sql-lab).\n"
+             "Admin SQL Demo Studio (/admin): Tích hợp 4 tab kiểm thử: Sinh dữ liệu lớn bằng generate_series, 12 truy vấn SQL nâng cao với bảng dữ liệu đầu ra thật, so sánh hiệu năng kèm Popup Cây kế hoạch thực thi và đối chứng dữ liệu, cùng mô phỏng 4 kịch bản giao dịch đồng thời ACID.")
         ]),
         ("CHƯƠNG 8: KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN", [
             ("8.1. Đánh giá kết quả đạt được", 

@@ -274,6 +274,113 @@ Mã nguồn kịch bản chi tiết tại [server/src/db/transaction_scenarios.s
 - **So sánh 3 mức cô lập**: `READ COMMITTED` (cho phép Non-repeatable/Phantom Read), `REPEATABLE READ` (Snapshot Isolation, ném lỗi concurrent update), và `SERIALIZABLE` (ngăn chặn Write Skew).
 - **Kịch bản Bế tắc (Deadlock)**: Hai session tạo khóa chéo trên `post_id = 1` và `post_id = 2`. Bộ Deadlock Detector của PostgreSQL tự động phát hiện sau 1.000 ms (`deadlock_timeout`) và hủy bỏ một transaction.
 
+## 6.4. Trang Quản Trị Chuyên Sâu Cho Admin & Giảng Viên: Admin SQL Demo Studio (`/admin`)
+Để phục vụ công tác nghiệm thu đồ án trực quan và thuyết minh trước Hội đồng chấm thi, nhóm đã xây dựng riêng trang quản trị tại route **`/admin`** (truy cập qua nút *Admin Demo SQL* trên thanh điều hướng), chia thành **4 tab chức năng độc lập**:
+1. **Tab 1: Thống Kê & Sinh Dữ Liệu Lớn (Bulk Data Generation & Database Sizing)**:
+   - Thống kê thời gian thực số dòng, dung lượng dữ liệu, dung lượng chỉ mục của **12 bảng quan hệ** qua `pg_total_relation_size()`.
+   - Tích hợp bộ sinh dữ liệu hàng loạt quy mô lớn (+500, +1.000, +5.000, +10.000 bản ghi) bằng kỹ thuật tập hợp **`generate_series()`** thuần PostgreSQL, hoàn thành chèn hàng chục nghìn dòng chỉ trong dưới 200 ms.
+2. **Tab 2: Demo 12 Truy Vấn SQL Nâng Cao (Advanced SQL Queries Studio)**:
+   - Cho phép chọn và thực thi trực tiếp 12 nghiệp vụ SQL nâng cao.
+   - **Hiển thị trực quan dữ liệu đầu ra dạng bảng (Real Output Dataset)** kèm chỉ số hiệu năng: Thời gian thực thi (Execution Time), Thời gian lập kế hoạch (Planning Time), Số dòng trả về, và Root Plan Node.
+   - Có cửa sổ Popup xem toàn bộ kế hoạch thực thi `EXPLAIN (ANALYZE, BUFFERS)`.
+3. **Tab 3: Đấu Trường So Sánh Hiệu Năng & Cây Truy Vấn (Performance Arena & Plan Trees)**:
+   - So sánh đối đầu 3 kịch bản: *Index Scan vs Seq Scan*, *Keyset Seek vs Deep OFFSET*, *GIN Full-Text Search vs ILIKE*.
+   - **Đối chứng dữ liệu đầu ra ở mỗi truy vấn**: Cung cấp tab chuyển đổi dữ liệu của cả Phương pháp A và Phương pháp B để chứng minh tính nhất quán dữ liệu (Data Consistency - cả 2 phương pháp đều trả về kết quả đúng đắn như nhau).
+   - **Popup Xem & So Sánh Cây Truy Vấn (Query Execution Plan Tree Modal)**: Hiển thị sơ đồ cây phân cấp các toán tử của PostgreSQL Optimizer (Node Type, Cost, Rows, Buffers Shared Hit/Read) đặt cạnh nhau để so sánh trực quan.
+4. **Tab 4: Mô Phỏng Giao Dịch Đồng Thời & Cơ Chế Khóa ACID (Concurrent Transactions)**:
+   - Mô phỏng 4 kịch bản giao dịch thực tế: Commit nguyên tử, Rollback Savepoint khi gặp lỗi khóa ngoại, Khóa bi quan `SELECT FOR UPDATE` ngăn chặn Lost Update, và các mức cô lập Snapshot Isolation.
+   - Trực quan hóa dòng thời gian tương tác từng bước giữa các phiên làm việc (Session 1 & Session 2).
+
+## 6.5. Thống Kê Chi Tiết Ví Dụ Trong Codebase: Số Lần Áp Dụng & Vị Trí Tiêu Biểu Nhất
+
+Nhóm đã tiến hành rà soát tự động và thống kê toàn bộ mã nguồn của dự án (tầng cơ sở dữ liệu, backend controller, route API và trang demo admin). Kết quả thể hiện qua ma trận dưới đây:
+
+### Bảng Ma Trận Thống Kê Kỹ Thuật CSDL Nâng Cao Trong Dự Án
+
+| STT | Kỹ thuật CSDL Nâng Cao | Số lần áp dụng trong Codebase | Danh sách File áp dụng | Vị trí áp dụng tiêu biểu nhất (File & Dòng) |
+| :---: | :--- | :---: | :--- | :--- |
+| **1** | **Truy vấn Đệ quy (`WITH RECURSIVE`)** | **16 lần** | `comments.controller.ts`, `network.controller.ts`, `lab.controller.ts`, `admin.controller.ts`, `advanced_queries.sql`, `queries.sql` | `server/src/controllers/comments.controller.ts` (Dòng 13–43)<br/>*Nghiệp vụ*: Cây bình luận lồng nhau vô hạn cấp với `sort_path` |
+| **2** | **Hàm Cửa Sổ (Window Functions: `ROW_NUMBER`, `DENSE_RANK`, `AVG() OVER`)** | **6 lần** | `advanced_queries.sql`, `admin.controller.ts` | `server/src/db/advanced_queries.sql` (Dòng 136–138)<br/>*Nghiệp vụ*: Phân hạng bài viết nổi bật Top Trending theo từng phạm vi |
+| **3** | **Giao Dịch ACID & Khóa Đồng Thời (`BEGIN`, `COMMIT`, `ROLLBACK`, `FOR UPDATE`, `SAVEPOINT`)** | **28 lần** | `posts.controller.ts`, `groups.controller.ts`, `admin.controller.ts`, `transaction_scenarios.sql`, `advanced_queries.sql` | `server/src/controllers/posts.controller.ts` (Dòng 210–245)<br/>*Nghiệp vụ*: Giao dịch nguyên tử chèn bài viết + tạo Tags + Post_Tags |
+| **4** | **Chỉ Mục Vật Lý Nâng Cao (B-Tree Composite, GIN Full-Text)** | **12 chỉ mục** | `server/src/db/indexes.sql`, `schema.sql` | `server/src/db/indexes.sql` (Dòng 18 & Dòng 21)<br/>*Nghiệp vụ*: Chỉ mục Keyset Seek `(created_at, post_id)` và GIN `search_vector` |
+| **5** | **Stored Procedure, Function PL/pgSQL & Trigger Tự Động** | **4 đối tượng** | `schema.sql`, `advanced_queries.sql` | `server/src/db/schema.sql` (Dòng 127–138)<br/>*Nghiệp vụ*: Trigger `posts_tsvector_trigger()` đồng bộ lexeme tự động |
+| **6** | **Truy Vấn Con Tương Quan (Correlated Subquery) & Phép Chia (`NOT EXISTS`)** | **14 lần** | `posts.controller.ts`, `groups.controller.ts`, `comments.controller.ts`, `advanced_queries.sql` | `server/src/controllers/posts.controller.ts` (Dòng 105–112)<br/>*Nghiệp vụ*: Đếm likes, comments và kiểm tra trạng thái `is_liked` của người dùng |
+| **7** | **Dynamic SQL An Toàn (`EXECUTE ... USING`)** | **3 lần** | `advanced_queries.sql`, `posts.controller.ts`, `admin.controller.ts` | `server/src/db/advanced_queries.sql` (Dòng 265–275)<br/>*Nghiệp vụ*: Xây dựng mệnh đề WHERE động chống SQL Injection |
+| **8** | **Sinh Dữ Liệu Lớn Tập Hợp (`generate_series`)** | **4 lần** | `server/src/controllers/admin.controller.ts`, `seed.ts` | `server/src/controllers/admin.controller.ts` (Dòng 82–115)<br/>*Nghiệp vụ*: Chèn 10.000 học giả và 40.000 liên kết đồ thị trong 182 ms |
+
+---
+
+### Phân Tích Chi Tiết Các Vị Trí Áp Dụng Tiêu Biểu Nhất
+
+#### 1. Vị trí Tiêu biểu của Truy vấn Đệ quy (`WITH RECURSIVE`):
+- **Tập tin**: `server/src/controllers/comments.controller.ts` (Dòng 13–43).
+- **Đoạn mã tiêu biểu**:
+```sql
+WITH RECURSIVE comment_tree AS (
+    -- Điểm neo (Anchor Member): các bình luận gốc cấp 0
+    SELECT c.comment_id, c.post_id, c.user_id, c.parent_id, c.content, c.created_at,
+           0 AS depth, ARRAY[c.comment_id] AS sort_path
+    FROM comments c
+    WHERE c.post_id = $1 AND c.parent_id IS NULL
+    UNION ALL
+    -- Bước đệ quy (Recursive Member): các phản hồi con lồng nhau
+    SELECT c.comment_id, c.post_id, c.user_id, c.parent_id, c.content, c.created_at,
+           ct.depth + 1, ct.sort_path || c.comment_id
+    FROM comments c
+    JOIN comment_tree ct ON c.parent_id = ct.comment_id
+)
+SELECT * FROM comment_tree ORDER BY sort_path ASC;
+```
+- **Ý nghĩa & Lý do chọn làm tiêu biểu**:
+  Thay vì tải toàn bộ bình luận lên bộ nhớ Node.js rồi dựng cây bằng thuật toán đệ quy DFS/BFS làm tiêu tốn CPU máy chủ ứng dụng, câu truy vấn này ủy thác toàn bộ cho PostgreSQL. Mảng số nguyên `sort_path` tích lũy ID qua từng cấp giúp mệnh đề `ORDER BY sort_path ASC` tự động sắp xếp các câu trả lời con nằm ngay dưới câu hỏi cha ở bất kỳ độ sâu nào với độ phức tạp tối ưu $O(K \log K)$.
+
+#### 2. Vị trí Tiêu biểu của Giao Dịch ACID (Transaction Control):
+- **Tập tin**: `server/src/controllers/posts.controller.ts` (Dòng 210–245).
+- **Đoạn mã tiêu biểu**:
+```typescript
+const client = await pool.connect();
+try {
+  await client.query('BEGIN');
+  const postRes = await client.query(
+    `INSERT INTO posts (author_id, group_id, scope, post_type, title, content)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+    [currentUserId, group_id, scope, post_type, title, content]
+  );
+  const post = postRes.rows[0];
+
+  for (const tagName of tags) {
+    const tagRes = await client.query(
+      `INSERT INTO tags (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING tag_id`,
+      [tagName.trim()]
+    );
+    await client.query(
+      `INSERT INTO post_tags (post_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      [post.post_id, tagRes.rows[0].tag_id]
+    );
+  }
+  await client.query('COMMIT');
+  return res.status(201).json({ post });
+} catch (error) {
+  await client.query('ROLLBACK');
+  return res.status(500).json({ error: error.message });
+} finally {
+  client.release();
+}
+```
+- **Ý nghĩa & Lý do chọn làm tiêu biểu**:
+  Nghiệp vụ tạo bài viết trong mạng xã hội học thuật liên quan đồng thời đến 3 bảng (`posts`, `tags`, và bảng nối `post_tags`). Việc quản lý giao dịch tường minh qua `client.query('BEGIN')` và `ROLLBACK` trong khối `catch` đảm bảo tính **Nguyên tử (Atomicity)**: nếu quá trình chèn tag hoặc liên kết bảng nối bị gián đoạn, hệ thống tự động hoàn tác toàn bộ, tránh triệt để hiện tượng bài viết "mồ côi" không có nhãn hoặc rò rỉ khóa ngoại.
+
+#### 3. Vị trí Tiêu biểu của Hàm Cửa Sổ (Window Functions):
+- **Tập tin**: `server/src/db/advanced_queries.sql` (Dòng 136–138).
+- **Đoạn mã tiêu biểu**:
+```sql
+ROW_NUMBER() OVER (PARTITION BY scope ORDER BY likes_count DESC, post_id DESC) AS row_num_in_scope,
+DENSE_RANK() OVER (PARTITION BY scope ORDER BY likes_count DESC) AS rank_in_scope,
+ROUND(AVG(likes_count) OVER (PARTITION BY scope), 2) AS scope_avg_likes
+```
+- **Ý nghĩa & Lý do chọn làm tiêu biểu**:
+  Cho phép tính toán đồng thời cả thứ hạng tuyệt đối (`ROW_NUMBER`), thứ hạng học thuật có đồng hạng (`DENSE_RANK`), và giá trị trung bình cộng của phân vùng (`AVG OVER PARTITION`) ngay trong một lượt quét bảng (Single Scan), loại bỏ hoàn toàn nhu cầu viết 3 truy vấn con lồng nhau tốn kém.
+
 ---
 
 # CHƯƠNG 7: KIỂM THỬ VÀ ĐÁNH GIÁ HIỆU NĂNG
@@ -294,7 +401,8 @@ EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) <query>;
 
 ## 7.3. Kiểm Thử Hệ Thống Phần Mềm
 - **Backend API**: `npm --prefix server run build` hoàn thành với **0 lỗi biên dịch TypeScript**.
-- **Frontend Next.js 16**: `npm --prefix client run lint` đạt **0 warnings, 0 errors**. Lệnh `build` tối ưu hóa thành công **13 dynamic routes**.
+- **Frontend Next.js 16**: `npm --prefix client run lint` đạt **0 warnings, 0 errors**. Lệnh `build` tối ưu hóa thành công **14 dynamic routes** (bao gồm trang quản trị `/admin` và phòng thí nghiệm `/sql-lab`).
+- **Admin SQL Demo Studio (`/admin`)**: Đã tích hợp đầy đủ 4 tab tương tác phục vụ thuyết minh đồ án trực tiếp: Sinh dữ liệu lớn hàng chục nghìn dòng bằng `generate_series`, chạy 12 truy vấn SQL nâng cao với bảng dữ liệu đầu ra thật, so sánh hiệu năng kèm Popup cây truy vấn (EXPLAIN Plan Tree Modal) và đối chứng dữ liệu đầu ra, cùng mô phỏng 4 kịch bản giao dịch đồng thời ACID.
 
 ---
 

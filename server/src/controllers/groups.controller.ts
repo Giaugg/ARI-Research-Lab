@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { query } from '../config/db';
+import { pool, query } from '../config/db';
 
 export const getGroups = async (req: Request, res: Response) => {
   try {
@@ -100,6 +100,7 @@ export const getGroupById = async (req: Request, res: Response) => {
 };
 
 export const createGroup = async (req: Request, res: Response) => {
+  const client = await pool.connect();
   try {
     const currentUserId = req.headers['x-user-id'] ? parseInt(req.headers['x-user-id'] as string, 10) : 1;
     const { name, topic, description } = req.body;
@@ -110,7 +111,10 @@ export const createGroup = async (req: Request, res: Response) => {
 
     const avatar = `https://images.unsplash.com/photo-1518770660439-4636190af475?w=150&auto=format&fit=crop&q=80`;
 
-    const groupRes = await query(
+    // Khởi tạo Transaction (Bảo đảm tính toàn vẹn giữa Tạo nhóm và Gán quyền Chủ nhiệm Lab)
+    await client.query('BEGIN');
+
+    const groupRes = await client.query(
       `INSERT INTO research_groups (name, topic, description, owner_id, avatar_url)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
@@ -119,16 +123,21 @@ export const createGroup = async (req: Request, res: Response) => {
 
     const group = groupRes.rows[0];
 
-    // Add owner to group_members
-    await query(
+    // Add owner to group_members trong cùng giao dịch
+    await client.query(
       `INSERT INTO group_members (group_id, user_id, role)
        VALUES ($1, $2, 'owner')`,
       [group.group_id, currentUserId]
     );
 
+    await client.query('COMMIT');
+
     return res.status(201).json({ group });
   } catch (error: any) {
+    await client.query('ROLLBACK');
     return res.status(500).json({ error: error.message });
+  } finally {
+    client.release();
   }
 };
 

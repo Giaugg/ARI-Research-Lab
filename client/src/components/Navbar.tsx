@@ -65,7 +65,8 @@ export default function Navbar() {
     { href: '/network', label: 'Network Traversal', icon: Network, highlight: true },
     { href: '/groups', label: 'Research Groups', icon: Users },
     { href: '/publications', label: 'Publications', icon: FileText },
-    { href: '/sql-lab', label: 'PostgreSQL Lab', icon: Cpu, badge: 'WITH RECURSIVE' }
+    { href: '/sql-lab', label: 'PostgreSQL Lab', icon: Cpu, badge: 'WITH RECURSIVE' },
+    { href: '/admin', label: 'Admin Demo SQL', icon: Shield, badge: 'ADMIN' }
   ];
 
   const getRoleBadge = (role?: string) => {

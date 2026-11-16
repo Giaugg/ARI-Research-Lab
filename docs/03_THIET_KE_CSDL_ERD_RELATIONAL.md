@@ -352,3 +352,127 @@ erDiagram
 | `link` | `TEXT` | `NULLABLE` | Đường dẫn điều hướng trực tiếp |
 | `is_read` | `BOOLEAN` | `DEFAULT FALSE` | Trạng thái đã đọc |
 | `created_at` | `TIMESTAMPTZ`| `DEFAULT NOW()` | Thời điểm sinh thông báo |
+
+---
+
+## 4. Các Sơ Đồ Cấu Trúc Dữ Liệu & Kiến Trúc Chuyên Sâu
+
+### 4.1. Sơ đồ Use Case Hệ thống (Actors & Primary Use Cases)
+
+```mermaid
+flowchart LR
+    subgraph Actors["Tác Nhân Hệ Thống"]
+        U_Scholar["Học Giả / Researcher"]
+        U_PI["Trưởng Lab / PI"]
+        U_Admin["Quản Trị Viên / Admin"]
+    end
+
+    subgraph UC_Post["Phân Hệ Bài Viết & Thảo Luận"]
+        UC1["Đăng bài (Community / Personal / Lab)"]
+        UC2["Bình luận đệ quy phân cấp"]
+        UC3["Gán nhãn thẻ học thuật (Tags)"]
+    end
+
+    subgraph UC_Graph["Phân Hệ Đồ Thị & Mạng Lưới"]
+        UC4["Theo dõi học giả (Follow Directed Edge)"]
+        UC5["Duyệt mạng lưới N-Hop Reachability"]
+        UC6["Tìm đường đi ngắn nhất (Shortest Path BFS)"]
+    end
+
+    subgraph UC_Admin["Phân Hệ Quản Trị & Thực Nghiệm"]
+        UC7["Quản lý thành viên & Lab"]
+        UC8["Sinh dữ liệu lớn (generate_series)"]
+        UC9["So sánh hiệu năng & EXPLAIN Plan Tree"]
+        UC10["Thực thi giao dịch đồng thời ACID"]
+    end
+
+    U_Scholar --> UC1
+    U_Scholar --> UC2
+    U_Scholar --> UC3
+    U_Scholar --> UC4
+    U_Scholar --> UC5
+
+    U_PI --> UC1
+    U_PI --> UC4
+    U_PI --> UC6
+    U_PI --> UC7
+
+    U_Admin --> UC7
+    U_Admin --> UC8
+    U_Admin --> UC9
+    U_Admin --> UC10
+```
+
+### 4.2. Sơ đồ Minh họa Cấu trúc Cây Bình Luận Đệ Quy (Hierarchical Adjacency List)
+
+```mermaid
+flowchart TD
+    Root["Bình luận Gốc (comment_id: 1, parent_id: NULL, depth: 0)<br/>sort_path: [1]"]
+    Reply1["Phản biện 1 (comment_id: 2, parent_id: 1, depth: 1)<br/>sort_path: [1, 2]"]
+    Reply2["Phản biện 2 (comment_id: 3, parent_id: 1, depth: 1)<br/>sort_path: [1, 3]"]
+    Nested1["Phản hồi con (comment_id: 4, parent_id: 2, depth: 2)<br/>sort_path: [1, 2, 4]"]
+    Nested2["Phản hồi cháu (comment_id: 5, parent_id: 4, depth: 3)<br/>sort_path: [1, 2, 4, 5]"]
+
+    Root --> Reply1
+    Root --> Reply2
+    Reply1 --> Nested1
+    Nested1 --> Nested2
+
+    classDef root fill:#dbeafe,stroke:#2563eb,stroke-width:2px;
+    classDef rep1 fill:#fef3c7,stroke:#d97706,stroke-width:1.5px;
+    classDef rep2 fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px;
+    classDef rep3 fill:#f3e8ff,stroke:#9333ea,stroke-width:1.5px;
+
+    class Root root;
+    class Reply1,Reply2 rep1;
+    class Nested1 rep2;
+    class Nested2 rep3;
+```
+
+### 4.3. Sơ đồ Minh họa Đồ Thị Theo Dõi Có Hướng & Phát Hiện Chu Trình
+
+```mermaid
+flowchart LR
+    U1["Học giả 1 (Stonebraker)"]
+    U2["Học giả 2 (Widom)"]
+    U3["Học giả 3 (LeCun)"]
+    U4["Học giả 4 (Ullman)"]
+
+    U1 -->|follows| U2
+    U2 -->|follows| U3
+    U3 -->|follows| U1
+    U1 -.->|Chu trình khép kín: 1 -> 2 -> 3 -> 1| U1
+
+    U2 -->|follows| U4
+    U4 -->|follows| U3
+
+    classDef cycleNode fill:#fee2e2,stroke:#dc2626,stroke-width:2px;
+    classDef regNode fill:#e0f2fe,stroke:#0284c7,stroke-width:1.5px;
+
+    class U1,U2,U3 cycleNode;
+    class U4 regNode;
+```
+
+### 4.4. Sơ đồ Kiến trúc Chỉ mục Vật lý B-Tree & GIN (PostgreSQL Indexing Layout)
+
+```mermaid
+flowchart TD
+    subgraph Storage["Tầng Lưu Trữ Quan Hệ (Heap Tuples)"]
+        HeapPosts["Table posts (Heap Pages 8KB)"]
+        HeapFollows["Table follows (Heap Pages 8KB)"]
+        HeapComments["Table comments (Heap Pages 8KB)"]
+    end
+
+    subgraph Indexes["Tầng Chỉ Mục Vật Lý (Index Trees)"]
+        GIN_Post["Chỉ mục GIN: idx_posts_search<br/>(search_vector: Lexeme Entries -> TID Lists)"]
+        BTree_Seek["Chỉ mục B-Tree Composite: idx_posts_created_id<br/>((created_at DESC, post_id DESC) -> O(log N) Keyset Seek)"]
+        BTree_Follow["Chỉ mục B-Tree Composite: idx_follows_follower<br/>((follower_id, following_id) -> Tối ưu CTE đệ quy)"]
+        BTree_Comment["Chỉ mục B-Tree: idx_comments_parent<br/>((parent_id) -> O(log N) Tree Join)"]
+    end
+
+    GIN_Post -.->|TID Lookup| HeapPosts
+    BTree_Seek -.->|Direct Pointer Seek| HeapPosts
+    BTree_Follow -.->|Fast Index Only Scan| HeapFollows
+    BTree_Comment -.->|Index Scan| HeapComments
+```
+

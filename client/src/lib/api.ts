@@ -457,5 +457,55 @@ export const api = {
       body: JSON.stringify({ count })
     });
     return res.json();
+  },
+
+  // Admin SQL Demo Lab APIs
+  getAdminOverview: async () => {
+    const res = await fetch(`${API_BASE}/admin/overview`, { headers: getHeaders() });
+    return res.json();
+  },
+
+  bulkGenerateData: async (type: string, count: number) => {
+    const res = await fetch(`${API_BASE}/admin/bulk-generate`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ type, count })
+    });
+    return res.json();
+  },
+
+  resetAndSeedDatabase: async () => {
+    const res = await fetch(`${API_BASE}/admin/reset-seed`, {
+      method: 'POST',
+      headers: getHeaders()
+    });
+    return res.json();
+  },
+
+  runAdminAdvancedQuery: async (queryId: number, params: any = {}) => {
+    const res = await fetch(`${API_BASE}/admin/advanced-query`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ queryId, params })
+    });
+    return res.json();
+  },
+
+  comparePerformance: async (scenario: string, extraParams: any = {}) => {
+    const res = await fetch(`${API_BASE}/admin/benchmark-compare`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ scenario, ...extraParams })
+    });
+    return res.json();
+  },
+
+  runTransactionScenario: async (scenarioId: string) => {
+    const res = await fetch(`${API_BASE}/admin/transaction-scenario`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ scenarioId })
+    });
+    return res.json();
   }
 };

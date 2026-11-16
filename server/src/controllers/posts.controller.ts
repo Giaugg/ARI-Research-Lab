@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { query } from '../config/db';
+import { pool, query } from '../config/db';
 
 export const getPosts = async (req: Request, res: Response) => {
   try {
@@ -187,6 +187,7 @@ export const getPostById = async (req: Request, res: Response) => {
 };
 
 export const createPost = async (req: Request, res: Response) => {
+  const client = await pool.connect();
   try {
     const currentUserId = req.headers['x-user-id'] ? parseInt(req.headers['x-user-id'] as string, 10) : 1;
     let { title, content, post_type = 'discussion', group_id, scope, tags = [] } = req.body;
@@ -208,7 +209,10 @@ export const createPost = async (req: Request, res: Response) => {
       group_id = null;
     }
 
-    const insertPostRes = await query(
+    // Bắt đầu Transaction nguyên tử (ACID Transaction)
+    await client.query('BEGIN');
+
+    const insertPostRes = await client.query(
       `INSERT INTO posts (author_id, group_id, scope, post_type, title, content)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
@@ -217,26 +221,32 @@ export const createPost = async (req: Request, res: Response) => {
 
     const post = insertPostRes.rows[0];
 
-    // Associate tags
+    // Associate tags trong cùng transaction
     if (Array.isArray(tags) && tags.length > 0) {
       for (const tagName of tags) {
         if (!tagName.trim()) continue;
         // Insert tag if not exists
-        const tagRes = await query(
+        const tagRes = await client.query(
           `INSERT INTO tags (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING tag_id`,
           [tagName.trim()]
         );
         const tagId = tagRes.rows[0].tag_id;
-        await query(
+        await client.query(
           `INSERT INTO post_tags (post_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
           [post.post_id, tagId]
         );
       }
     }
 
+    // Xác nhận giao dịch thành công (COMMIT)
+    await client.query('COMMIT');
+
     return res.status(201).json({ post });
   } catch (error: any) {
+    await client.query('ROLLBACK');
     return res.status(500).json({ error: error.message });
+  } finally {
+    client.release();
   }
 };
 
